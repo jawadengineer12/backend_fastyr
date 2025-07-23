@@ -56,6 +56,7 @@ async def upload_file(email: str, file: UploadFile = File(...)):
             loader = PyPDFLoader(file_path)
         elif file.filename.endswith(".docx"):
             loader = Docx2txtLoader(file_path)
+            print("Docx file loaded successfully")
         elif file.filename.endswith(".csv"):
             loader = CSVLoader(file_path)
         elif file.filename.endswith(".txt"):  # <-- Add this
@@ -84,8 +85,12 @@ def create_chat(email: str, prompt: str, db: Session = Depends(get_db)):
         vectorstore = get_user_vectorstore(email)
 
         llm = ChatOpenAI(model_name="gpt-4o", openai_api_key=api_key, temperature=0.3)
+        casual_responses = ["thanks", "thank you", "ok", "bye"]
 
-        if vectorstore:
+        # Keyword-based retrieval trigger
+        retrieval_keywords = ["docs", "pdf", "csv", "file", "document"]
+
+        if vectorstore and any(word in prompt.lower() for word in retrieval_keywords):
             retriever = vectorstore.as_retriever()
             conversation = ConversationalRetrievalChain.from_llm(
                 llm=llm,
@@ -93,6 +98,8 @@ def create_chat(email: str, prompt: str, db: Session = Depends(get_db)):
                 memory=memory
             )
             response_text = conversation.run(prompt)
+        elif len(prompt.split()) < 3 or prompt.lower() in casual_responses:
+            response_text = llm.predict(prompt)
         else:
             response_text = llm.predict(prompt)
 
