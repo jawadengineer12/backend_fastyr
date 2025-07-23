@@ -20,4 +20,4 @@ pypdf
 python-docx
 pandas
 aiohttp>=3.8.3,<4.0.0
-
+docx2txt
